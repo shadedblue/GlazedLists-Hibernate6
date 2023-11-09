@@ -50,7 +50,17 @@ public class PersistentEventListType<E> implements UserCollectionType {
 
 	/** Factory for EventLists. */
 	@SuppressWarnings("unchecked")
-	private EventListFactory<E> underlyingListFactory = EventListFactory.DEFAULT;
+	private EventListFactory<E> underlyingListFactory = new EventListFactory<E>() {
+		@Override
+		public EventList<E> createEventList() {
+			return new UnderlyingPersistentEventList<>();
+		}
+
+		@Override
+		public EventList<E> createEventList(int initalCapacity) {
+			return new UnderlyingPersistentEventList<>(initalCapacity);
+		}
+	};
 
 	public final EventListFactory<E> getUnderlyingListFactory() {
 		return underlyingListFactory;
@@ -79,7 +89,7 @@ public class PersistentEventListType<E> implements UserCollectionType {
 	public Class<?> getCollectionClass() {
 		return List.class;
 	}
-	
+
 	@Override
 	public boolean contains(Object collection, Object entity) {
 		if (collection instanceof List<?>) {
@@ -112,10 +122,17 @@ public class PersistentEventListType<E> implements UserCollectionType {
 	@Override
 	public Object replaceElements(Object original, Object target, CollectionPersister persister, Object owner,
 			Map copyCache, SharedSessionContractImplementor session) throws HibernateException {
-		final EventList<E> result = (EventList<E>) target;
+		final CanUpdateAllElements<E> result = (CanUpdateAllElements<E>) target;
+		final EventList<E> resultList = (EventList<E>) target;
+
 		final EventList<E> source = (EventList<E>) original;
-		result.clear();
-		result.addAll(source);
+		resultList.getReadWriteLock().writeLock().lock();
+		source.getReadWriteLock().readLock().lock();
+
+		result.updateAll(source);
+
+		resultList.getReadWriteLock().writeLock().unlock();
+		source.getReadWriteLock().readLock().unlock();
 		return result;
 	}
 }

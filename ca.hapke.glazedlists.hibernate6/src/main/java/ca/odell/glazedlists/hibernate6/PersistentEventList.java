@@ -34,7 +34,8 @@ import ca.odell.glazedlists.util.concurrent.ReadWriteLock;
  * @author James Lemieux
  * @author Nathan Hapke
  */
-public final class PersistentEventList<E> extends PersistentList<E> implements EventList<E>, ListEventListener<E> {
+public final class PersistentEventList<E> extends PersistentList<E>
+		implements EventList<E>, ListEventListener<E>, CanUpdateAllElements<E> {
 
 	private static final long serialVersionUID = 0L;
 
@@ -74,7 +75,6 @@ public final class PersistentEventList<E> extends PersistentList<E> implements E
 		newList.addListEventListener(this);
 	}
 
-
 	/** {@inheritDoc} */
 	@Override
 	public ListEventPublisher getPublisher() {
@@ -108,6 +108,12 @@ public final class PersistentEventList<E> extends PersistentList<E> implements E
 		if (wasInitialized()) {
 			updates.forwardEvent(listChanges);
 		}
+	}
+
+	@Override
+	public boolean updateAll(List<? extends E> input) {
+		UnderlyingPersistentEventList<E> underlying = (UnderlyingPersistentEventList<E>) list;
+		return underlying.updateAll(input);
 	}
 
 	/** {@inheritDoc} */
@@ -177,4 +183,5 @@ public final class PersistentEventList<E> extends PersistentList<E> implements E
 		}
 		endRead();
 	}
+
 }
