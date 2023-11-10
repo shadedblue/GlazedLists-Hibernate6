@@ -39,6 +39,8 @@ public final class PersistentEventList<E> extends PersistentList<E>
 
 	private static final long serialVersionUID = 0L;
 
+	private static final boolean DEBUG = true;
+
 	/** the change event and notification system */
 	protected transient ListEventAssembler<E> updates;
 
@@ -48,7 +50,7 @@ public final class PersistentEventList<E> extends PersistentList<E>
 	 * @param session     the session
 	 * @param listFactory factory for EventLists
 	 */
-	public PersistentEventList(SharedSessionContractImplementor session, EventListFactory<E> listFactory) {
+	public PersistentEventList(SharedSessionContractImplementor session, PersistentEventListFactory<E> listFactory) {
 		super(session);
 
 		final EventList<E> delegate = listFactory.createEventList();
@@ -112,8 +114,43 @@ public final class PersistentEventList<E> extends PersistentList<E>
 
 	@Override
 	public boolean updateAll(List<? extends E> input) {
-		UnderlyingPersistentEventList<E> underlying = (UnderlyingPersistentEventList<E>) list;
-		return underlying.updateAll(input);
+		if (list instanceof UnderlyingPersistentEventList) {
+			if (DEBUG) {
+				System.out.println("----------------------------------------------------");
+				System.out.println("  Update on UnderlyingPersistentEventList: correct");
+				System.out.println("----------------------------------------------------");
+			}
+			UnderlyingPersistentEventList<E> underlying = (UnderlyingPersistentEventList<E>) list;
+			return underlying.updateAll(input);
+		} else {
+			if (DEBUG) {
+				System.out.println("-----------------------------------------------------");
+				System.err.println(" Update on UnderlyingPersistentEventList: INCORRECT");
+				System.out.println("----------------------------------------------------");
+			}
+			int i = 0;
+			List<E> data = list;
+			boolean changed = false;
+			while (i < input.size()) {
+				E newValue = input.get(i);
+				if (i >= data.size()) {
+					data.add(newValue);
+					changed = true;
+				} else {
+					E oldValue = data.get(i);
+					if (oldValue != newValue) {
+						data.set(i, newValue);
+						changed = true;
+					}
+				}
+				i++;
+			}
+			while (data.size() > i) {
+				data.remove(i);
+				changed = true;
+			}
+			return changed;
+		}
 	}
 
 	/** {@inheritDoc} */

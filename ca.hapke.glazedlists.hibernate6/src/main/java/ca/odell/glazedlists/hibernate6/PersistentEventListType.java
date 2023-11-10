@@ -17,6 +17,7 @@ import org.hibernate.usertype.UserCollectionType;
 import ca.odell.glazedlists.BasicEventList;
 import ca.odell.glazedlists.EventList;
 import ca.odell.glazedlists.event.ListEventPublisher;
+import ca.odell.glazedlists.hibernate.EventListFactory;
 import ca.odell.glazedlists.util.concurrent.ReadWriteLock;
 
 /**
@@ -49,8 +50,7 @@ import ca.odell.glazedlists.util.concurrent.ReadWriteLock;
 public class PersistentEventListType<E> implements UserCollectionType {
 
 	/** Factory for EventLists. */
-	@SuppressWarnings("unchecked")
-	private EventListFactory<E> underlyingListFactory = new EventListFactory<E>() {
+	private PersistentEventListFactory<E> underlyingListFactory = new PersistentEventListFactory<E>() {
 		@Override
 		public EventList<E> createEventList() {
 			return new UnderlyingPersistentEventList<>();
@@ -62,7 +62,7 @@ public class PersistentEventListType<E> implements UserCollectionType {
 		}
 	};
 
-	public final EventListFactory<E> getUnderlyingListFactory() {
+	public final PersistentEventListFactory<E> getUnderlyingListFactory() {
 		return underlyingListFactory;
 	}
 
@@ -114,7 +114,7 @@ public class PersistentEventListType<E> implements UserCollectionType {
 
 	@Override
 	public Object instantiate(int anticipatedSize) {
-		final EventListFactory<E> fac = getUnderlyingListFactory();
+		final PersistentEventListFactory<E> fac = getUnderlyingListFactory();
 		return anticipatedSize < 0 ? fac.createEventList() : fac.createEventList(anticipatedSize);
 	}
 
@@ -122,17 +122,21 @@ public class PersistentEventListType<E> implements UserCollectionType {
 	@Override
 	public Object replaceElements(Object original, Object target, CollectionPersister persister, Object owner,
 			Map copyCache, SharedSessionContractImplementor session) throws HibernateException {
-		final CanUpdateAllElements<E> result = (CanUpdateAllElements<E>) target;
 		final EventList<E> resultList = (EventList<E>) target;
-
 		final EventList<E> source = (EventList<E>) original;
+
 		resultList.getReadWriteLock().writeLock().lock();
 		source.getReadWriteLock().readLock().lock();
 
-		result.updateAll(source);
-
+		if (target instanceof CanUpdateAllElements) {
+			final CanUpdateAllElements<E> result = (CanUpdateAllElements<E>) target;
+			result.updateAll(source);
+		} else {
+			resultList.clear();
+			resultList.addAll(source);
+		}
 		resultList.getReadWriteLock().writeLock().unlock();
 		source.getReadWriteLock().readLock().unlock();
-		return result;
+		return resultList;
 	}
 }
