@@ -5,6 +5,7 @@
 package ca.odell.glazedlists.hibernate6;
 
 import ca.odell.glazedlists.EventList;
+import ca.odell.glazedlists.hibernate.PersistentEventList;
 
 /**
  * A factory for EventLists, that is used by instances of

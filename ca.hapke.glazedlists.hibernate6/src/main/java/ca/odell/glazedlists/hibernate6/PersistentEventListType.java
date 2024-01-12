@@ -49,28 +49,13 @@ import ca.odell.glazedlists.util.concurrent.ReadWriteLock;
  */
 public class PersistentEventListType<E> implements UserCollectionType {
 
-	/** Factory for EventLists. */
-	private PersistentEventListFactory<E> underlyingListFactory = new PersistentEventListFactory<E>() {
-		@Override
-		public EventList<E> createEventList() {
-			return new UnderlyingPersistentEventList<>();
-		}
-
-		@Override
-		public EventList<E> createEventList(int initalCapacity) {
-			return new UnderlyingPersistentEventList<>(initalCapacity);
-		}
-	};
-
-	public final PersistentEventListFactory<E> getUnderlyingListFactory() {
-		return underlyingListFactory;
-	}
+	private PersistentEventListFactory<E> underlyingListFactory = PersistentEventListFactory.DEFAULT;
 
 	/** {@inheritDoc} */
 	@Override
 	public PersistentCollection<E> instantiate(SharedSessionContractImplementor session, CollectionPersister persister)
 			throws HibernateException {
-		return new PersistentEventList<E>(session, getUnderlyingListFactory());
+		return new PersistentEventList<E>(session, underlyingListFactory);
 	}
 
 	/** {@inheritDoc} */
@@ -114,8 +99,8 @@ public class PersistentEventListType<E> implements UserCollectionType {
 
 	@Override
 	public Object instantiate(int anticipatedSize) {
-		final PersistentEventListFactory<E> fac = getUnderlyingListFactory();
-		return anticipatedSize < 0 ? fac.createEventList() : fac.createEventList(anticipatedSize);
+		return anticipatedSize < 0 ? underlyingListFactory.createEventList()
+				: underlyingListFactory.createEventList(anticipatedSize);
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
