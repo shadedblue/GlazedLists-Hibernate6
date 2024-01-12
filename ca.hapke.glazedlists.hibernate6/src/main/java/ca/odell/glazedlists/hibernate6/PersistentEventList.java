@@ -115,11 +115,6 @@ public final class PersistentEventList<E> extends PersistentList<E>
 	@Override
 	public boolean updateAll(List<? extends E> input) {
 		if (list instanceof UnderlyingPersistentEventList) {
-			if (DEBUG) {
-				System.out.println("----------------------------------------------------");
-				System.out.println("  Update on UnderlyingPersistentEventList: correct");
-				System.out.println("----------------------------------------------------");
-			}
 			UnderlyingPersistentEventList<E> underlying = (UnderlyingPersistentEventList<E>) list;
 			return underlying.updateAll(input);
 		} else {
