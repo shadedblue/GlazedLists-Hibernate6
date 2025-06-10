@@ -10,7 +10,7 @@
 		<version.el>4.0.2</version.el>
 		<version.el.api>5.0.1</version.el.api>
 
-		<version.jdk>11</version.jdk>
+		<version.jdk>17</version.jdk>
 		<version.junit>4.13.2</version.junit>
 	</properties>
 
